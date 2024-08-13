@@ -1,0 +1,16 @@
+---
+title: "WineQuality"
+author: "Reagan Fleming"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Load the Dataset
+
+```{r}
+data_raw <- read.csv("data/winequalityN.csv")
+```
