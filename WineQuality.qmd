@@ -13,4 +13,84 @@ Quarto enables you to weave together content and executable code into a finished
 
 ```{r}
 data_raw <- read.csv("data/winequalityN.csv")
+df_clean <- na.omit(data_raw)
+#split into reds and whites
+reds <- subset(df_clean, type == "red")
+whites <- subset(df_clean, type == "white")
+print(whites)
+```
+
+## White Wine Quality Prediction with Random Forest w/o SMOTE
+
+```{r}
+# Filter out the 'whites' subset from the dataset
+whites <- subset(data_raw, type == "white")
+
+
+whites <- whites[ , !(names(whites) %in% c("type"))]
+
+whites <- na.omit(whites)
+
+
+whites$quality <- as.factor(whites$quality)
+
+
+set.seed(123) 
+train_index <- createDataPartition(whites$quality, p = 0.7, list = FALSE)
+train <- whites[train_index, ]
+test <- whites[-train_index, ]
+
+
+set.seed(123)
+rf_model <- randomForest(quality ~ ., data = train, importance = TRUE, ntree = 100)
+
+
+predictions <- predict(rf_model, newdata = test)
+
+
+accuracy <- sum(predictions == test$quality) / nrow(test)
+cat("Model Accuracy on Whites:", accuracy, "\n")
+
+
+confusionMatrix(predictions, test$quality)
+```
+
+## White Wine Quality Prediction with Random Forest w/ SMOTE
+
+```{r}
+# Load necessary library
+library(randomForest)
+library(caret)
+install.packages("smotefamily")
+library(smotefamily)
+
+set.seed(123)  
+train_index <- createDataPartition(whites$quality, p = 0.7, list = FALSE)
+train <- whites[train_index, ]
+test <- whites[-train_index, ]
+
+train <- train[ , !(names(train) %in% c("type"))]
+test <- test[ , !(names(test) %in% c("type"))]
+
+smote_data <- SMOTE(train[,-ncol(train)], train$quality, K = 4)
+smote_train <- smote_data$data  # Extract the SMOTE data
+colnames(smote_train)[ncol(smote_train)] <- "quality"  # Rename the last column
+smote_train$quality <- as.factor(smote_train$quality)
+if (sum(is.na(smote_train)) > 0) {
+   smote_train <- na.omit(smote_train)
+}
+
+set.seed(123)
+rf_model <- randomForest(quality ~ ., data = smote_train, importance = TRUE, ntree = 100)
+
+predictions <- predict(rf_model, newdata = test)
+
+accuracy <- sum(predictions == test$quality) / nrow(test)
+cat("Model Accuracy on Whites after SMOTE:", accuracy, "\n")
+
+test$quality <- as.factor(test$quality)
+
+predictions <- factor(predictions, levels = levels(test$quality))
+
+confusionMatrix(predictions, test$quality)
 ```
